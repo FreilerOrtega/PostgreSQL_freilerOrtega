@@ -15,6 +15,124 @@ Seguidores int4 not null,
 Siguiendo integer NOT NULL
 );
 
+drop table credenciales;
+
+create type rol as enum('usuario','admin');
+
+
+create table credenciales(
+usuario varchar (100) primary key ,
+password text not null,
+user_rol rol not null
+);
+
+alter table credenciales add primary key(usenamer);
+
+alter table usuarios  add constraint fk_username foreign key (usuario) references credenciales(usuario); 
+
+insert into credenciales (usuario,password,user_rol)
+select usuario,'password' as password,'usuario' as rol from usuarios;
+
+select * from credenciales ;
+
+create table integrante(
+	id serial primary key,
+	nombre varchar (30) not null,
+	edad smallint not null check(edad > 9)
+);
+
+--ejemplo cuando no tenemos creado el contraint en la tabla  
+alter table integrante add constraint check_edad check(edad>9);
+
+
+insert into integrante(nombre,edad) values('rafael',11);
+insert into integrante(nombre,edad) values('pedrito',8);
+
+select * from integrante ;
+
+
+select string_agg(SUBSTRING('0123456789abcdefghijklmnñopqrstuvwxyz$.!',round(random()*length('0123456789abcdefghijklmnñopqrstuvwxyz$.!'))::integer,1),'')as newpassword 
+from generate_series(1,15); 
+
+select generate_series(1,10);
+
+
+--funcion para actualizar contraseñas nuevas 
+--funcion que retorna una tabla
+create function genarete_random_password(long INTEGER)
+returns table( password text) as $$
+BEGIN
+ return query select string_agg(SUBSTRING('0123456789abcdefghijklmnñopqrstuvwxyz$.!',round(random()*length('0123456789abcdefghijklmnñopqrstuvwxyz$.!'))::integer,1),'')as newpassword 
+from generate_series(1,long); --- queda para revisar. 
+END;
+$$ LANGUAGE plpgsql;
+
+select genarete_random_password(5);
+
+
+-- funcion retornar texto 
+create function genarete_random_password1(long INTEGER)
+returns text as $$
+BEGIN
+ return (select string_agg(SUBSTRING('0123456789abcdefghijklmnñopqrstuvwxyz$.!',round(random()*length('0123456789abcdefghijklmnñopqrstuvwxyz$.!'))::integer,1),'')as newpassword 
+from generate_series(1,long)); --- queda para revisar. 
+END;
+$$ LANGUAGE plpgsql;
+
+select genarete_random_password1(5);
+
+
+-- funcion retornar text de una variable 
+
+create function genarete_random_password2(long INTEGER)
+returns text as $$
+declare pass varchar(50);
+BEGIN
+pass = (select string_agg(SUBSTRING('0123456789abcdefghijklmnñopqrstuvwxyz$.!',round(random()*length('0123456789abcdefghijklmnñopqrstuvwxyz$.!'))::integer,1),'')as newpassword 
+from generate_series(1,long)); --- queda para revisar.
+return pass;
+END;
+$$ LANGUAGE plpgsql;
+
+select genarete_random_password2(5);
+
+create function sumar(n1 INTEGER,n2 INTEGER)
+returns INTEGER as $$
+BEGIN
+return n1+n2;
+END;
+$$ LANGUAGE plpgsql;
+
+select sumar(10,5);
+
+
+select genarete_random_password1(3),
+
+select * from credenciales ;
+
+
+select sha512(password::bytea),usuario from credenciales;
+--actualizar una sola contraseña de un solo usuario
+update credenciales set password = sha512()  where  usuario = 'brush99';
+
+--actualiza las contraseñas de todos 
+update credenciales set password = genarete_random_password1(12);-- where  usuario = 'brush99'
+
+-- ver la contraseña de el usuario especifico 
+
+select * from credenciales where usuario ='brush99';
+
+-- agregar columnas a una tabla 
+alter table credenciales add column password_sha bytea null; 
+
+--para actualizar  cifrar una contraseña 
+
+update credenciales set password_sha = sha512(password::bytea);
+
+-- para hacer la verificacion de las contraseñas cifradas ya teniendo en cuenta el usuario al cual se va ingresar 
+
+select * from credenciales where sha512('8ik9firbb5gs') = password_sha and usuario = 'brush99';
+
 
 INSERT INTO usuarios(Nombre , Apellido, Correo, ip, Locacion, Blog, Usuario, Seguidores, Siguiendo ) VALUES('Winnie','Peterson','winnie.peterson@bokegop.id','179.183.141.53','Falkland Islands','http://leni.ar/ma','brush99',108,17380),
 ('Myrtie','Powell','myrtie.powell@elbafla.kn','63.178.110.234','Vatican City','http://bawfobde.bv/oba','talk39',1028,13676),
